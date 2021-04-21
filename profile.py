@@ -116,7 +116,7 @@ This will install all dependencies in the **tf2** conda environment.
     
 ## Training the FL Model
 
-To excute the example code in ```/mydata/federated-learning-lib/Notebooks/keras_classifier```, run the following commands on the `epc`, `ue1`, and `ue2` nodes.
+To excute the example code in ```/mydata/federated-learning-lib/Notebooks/keras_classifier```, run the following commands on the `enb`, `ue1`, and `ue2` nodes.
 
     sudo bash
     conda activate tf2
