@@ -49,11 +49,6 @@ A simple Federated setup deployed over the srsLTE LTE framework. The setup inclu
 This profile utilizes IBM's enterprise Federated framework. 
 """
 tourInstructions = """
-
-# TODO:
-
-* Update notebooks for new srsUE tunnel ips
-
 **IMPORTANT: You MUST adjust the configuration of srsLTE eNodeB and UE
 components if you changed the frequency ranges in the profile
 parameters. Do so BEFORE starting any srsLTE processes!  Please see
