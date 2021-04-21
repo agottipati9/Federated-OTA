@@ -71,6 +71,7 @@ to finish setting up the experiment:
 
 To configure the LTE setup, log into the corresponding nodes and run the following commands:
 
+    On enb: sudo cp /local/repository/etc/srsLTE/user_db.csv /etc/srslte/user_db.csv
     On enb: sudo cp /local/repository/etc/srsLTE/epc.conf /etc/srslte/epc.conf
     On enb: sudo cp /local/repository/etc/srsLTE/enb.conf /etc/srslte/enb.conf
     On ue1: sudo cp /local/repository/etc/srsLTE/ue1.conf /etc/srslte/ue.conf
