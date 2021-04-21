@@ -1,11 +1,10 @@
-# Import the Portal object.
 import geni.portal as portal
-# Import the ProtoGENI library.
-import geni.rspec.pg as pg
-# Emulab specific extensions.
-import geni.rspec.emulab as emulab
-# Markdown
-import geni.rspec.igext as IG
+import geni.urn as URN
+import geni.rspec.pg as rspec
+import geni.rspec.emulab as elab
+import geni.rspec.emulab.pnext as pn
+import geni.rspec.emulab.spectrum as spectrum
+import geni.rspec.igext as ig
 
 tourDescription = """
 This profile allows the allocation of resources for over-the-air operation on
@@ -45,7 +44,6 @@ and an EPC core network:
   * Spectrum:
    * Uplink: 2500 MHz to 2510 MHz
    * Downlink: 2620 MHz to 2630 MHz
-
 
 A simple Federated setup deployed over the srsLTE LTE framework. The setup includes two srsUE UEs and a single srsLTE eNodeB.
 This profile utilizes IBM's enterprise Federated framework. 
@@ -190,43 +188,141 @@ Try adjusting the transmit/receive gain on the eNodeB and the respective UE in `
 
 # Globals
 class GLOBALS(object):
-    SRS_ENB_IMG = "urn:publicid:IDN+emulab.net+image+PowderProfiles:U18LL-SRSLTE:1"
+    SRS_ENB_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:U18LL-SRSLTE"
     EPC_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU18-64-STD"
     NEXTEPC_INSTALL_SCRIPT = "/usr/bin/sudo chmod +x /local/repository/bin/NextEPC/install_nextEPC.sh && /usr/bin/sudo /local/repository/bin/NextEPC/install_nextEPC.sh"
     NUC_HWTYPE = "nuc5300"
+    DLDEFLOFREQ = 2620.0
+    DLDEFHIFREQ = 2630.0
+    ULDEFLOFREQ = 2500.0
+    ULDEFHIFREQ = 2510.0
 
-# Create a portal context, needed to defined parameters
-pc = portal.Context()
 
-# Create a Request object to start building the RSpec.
-request = pc.makeRequestRSpec()
+def x310_node_pair(idx, x310_radio, hacklan):
+    radio_link = request.Link("radio-link-%d"%(idx))
+    radio_link.bandwidth = 10*1000*1000
 
-pc.defineParameter("FIXED_UE1", "Bind to a specific NUC UE",
-                   portal.ParameterType.STRING, "nuc1", advanced=True,
-                   longDescription="Input the name of a PhantomNet UE node to allocate (e.g., 'nuc1' or 'nuc3').  Leave blank to "
-                                   "let the mapping algorithm choose.")
+    node = request.RawPC("%s-comp"%(x310_radio.radio_name))
+    node.hardware_type = params.x310_pair_nodetype
+    node.disk_image = GLOBALS.SRSLTE_IMG
+    bs = node.Blockstore("bs-comp-%s" % idx, params.tempFileSystemMount)
+    bs.size = "0GB"
+    bs.placement = "any"
+    node.component_manager_id = "urn:publicid:IDN+emulab.net+authority+cm"
+    node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/add-nat-and-ip-forwarding.sh"))
+    node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/update-config-files.sh"))
+    node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
+    node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-sdr-iface.sh"))
 
-pc.defineParameter("FIXED_UE2", "Bind to a specific NUC UE",
-                   portal.ParameterType.STRING, "nuc3", advanced=True,
-                   longDescription="Input the name of a PhantomNet UE node to allocate (e.g., 'nuc1' or 'nuc3').  Leave blank to "
-                                   "let the mapping algorithm choose.")
+    node_radio_if = node.addInterface("usrp_if")
+    enb_s1_if = node.addInterface("enb1_s1if")
+    node_radio_if.addAddress(rspec.IPv4Address("192.168.40.1",
+                                               "255.255.255.0"))
+    radio_link.addInterface(node_radio_if)
 
-pc.defineParameter("FIXED_ENB1", "Bind to a specific eNodeB",
-                   portal.ParameterType.STRING, "nuc4", advanced=True,
-                   longDescription="Input the name of a PhantomNet eNodeB device to allocate (e.g., 'nuc2' or 'nuc4').  Leave "
-                                   "blank to let the mapping algorithm choose.  If you bind both UE and eNodeB "
-                                   "devices, mapping will fail unless there is path between them via the attenuator "
-                                   "matrix.")
+    radio = request.RawPC("%s-x310"%(x310_radio.radio_name))
+    radio.component_id = x310_radio.radio_name
+    radio.component_manager_id = "urn:publicid:IDN+emulab.net+authority+cm"
+    radio_link.addNode(radio)
+    hacklan.addInterface(enb_s1_if)
 
-# # Optional ephemeral blockstore
-# pc.defineParameter("tempFileSystemSize", "Temporary Filesystem Size",
-#                   portal.ParameterType.INTEGER, 0,advanced=True,
-#                   longDescription="The size in GB of a temporary file system to mount on each of your " +
-#                   "nodes. Temporary means that they are deleted when your experiment is terminated. " +
-#                   "The images provided by the system have small root partitions, so use this option " +
-#                   "if you expect you will need more space to build your software packages or store " +
-#                   "temporary files.")
-                   
+
+def b210_nuc_pair(idx, b210_node):
+    b210_nuc_pair_node = request.RawPC("b210-%s-%s"%(b210_node.aggregate_id,"nuc2"))
+    bs = b210_nuc_pair_node.Blockstore("bs-b210-%s" % idx, params.tempFileSystemMount)
+    bs.size = "0GB"
+    bs.placement = "any"
+    agg_full_name = "urn:publicid:IDN+%s.powderwireless.net+authority+cm"%(b210_node.aggregate_id)
+    b210_nuc_pair_node.component_manager_id = agg_full_name
+    b210_nuc_pair_node.component_id = "nuc2"
+    b210_nuc_pair_node.disk_image = GLOBALS.SRSLTE_IMG
+    b210_nuc_pair_node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/update-config-files.sh"))
+    b210_nuc_pair_node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
+
+
+node_type = [
+    ("d740",
+     "Emulab, d740"),
+    ("d430",
+     "Emulab, d430")
+]
+
+portal.context.defineParameter("x310_pair_nodetype",
+                               "Type of compute node paired with the X310 Radios",
+                               portal.ParameterType.STRING,
+                               node_type[0],
+                               node_type)
+
+rooftop_names = [
+    ("cellsdr1-browning",
+     "Emulab, cellsdr1-browning (Browning)"),
+    ("cellsdr1-meb",
+     "Emulab, cellsdr1-meb (MEB)"),
+]
+
+portal.context.defineStructParameter("x310_radios", "X310 Radios", [],
+                                     multiValue=True,
+                                     itemDefaultValue=
+                                     {},
+                                     min=0, max=None,
+                                     members=[
+                                        portal.Parameter(
+                                             "radio_name",
+                                             "Rooftop base-station X310",
+                                             portal.ParameterType.STRING,
+                                             rooftop_names[0],
+                                             rooftop_names)
+                                     ])
+
+fixed_endpoint_aggregates = [
+    ("web",
+     "WEB, nuc2"),
+    ("bookstore",
+     "Bookstore, nuc2"),
+]
+
+portal.context.defineStructParameter("b210_nodes", "B210 Radios", [],
+                                     multiValue=True,
+                                     min=0, max=None,
+                                     members=[
+                                         portal.Parameter(
+                                             "aggregate_id",
+                                             "Fixed Endpoint B210",
+                                             portal.ParameterType.STRING,
+                                             fixed_endpoint_aggregates[0],
+                                             fixed_endpoint_aggregates)
+                                     ],
+                                    )
+
+portal.context.defineParameter(
+    "ul_freq_min",
+    "Uplink Frequency Min",
+    portal.ParameterType.BANDWIDTH,
+    GLOBALS.ULDEFLOFREQ,
+    longDescription="Values are rounded to the nearest kilohertz."
+)
+portal.context.defineParameter(
+    "ul_freq_max",
+    "Uplink Frequency Max",
+    portal.ParameterType.BANDWIDTH,
+    GLOBALS.ULDEFHIFREQ,
+    longDescription="Values are rounded to the nearest kilohertz."
+)
+portal.context.defineParameter(
+    "dl_freq_min",
+    "Downlink Frequency Min",
+    portal.ParameterType.BANDWIDTH,
+    GLOBALS.DLDEFLOFREQ,
+    longDescription="Values are rounded to the nearest kilohertz."
+)
+portal.context.defineParameter(
+    "dl_freq_max",
+    "Downlink Frequency Max",
+    portal.ParameterType.BANDWIDTH,
+    GLOBALS.DLDEFHIFREQ,
+    longDescription="Values are rounded to the nearest kilohertz."
+)
+
 # # Instead of a size, ask for all available space. 
 pc.defineParameter("tempFileSystemMax",  "Temp Filesystem Max Space",
                     portal.ParameterType.BOOLEAN, True,
@@ -240,63 +336,53 @@ pc.defineParameter("tempFileSystemMount", "Temporary Filesystem Mount Point",
                   "you do not need to change this, but we provide the option just in case your software " +
                   "is finicky.")
 
-# Retrieve the values the user specifies during instantiation.
-params = pc.bindParameters()
+# Bind parameters
+params = portal.context.bindParameters()
 
-# if params.tempFileSystemSize < 0 or params.tempFileSystemSize > 200:
-#     pc.reportError(portal.ParameterError("Please specify a size greater then zero and " +
-#                                          "less then 200GB", ["nodeCount"]))
-pc.verifyParameters()
+# Check frequency parameters.
+if params.ul_freq_min < 2500 or params.ul_freq_min > 2570 \
+   or params.ul_freq_max < 2500 or params.ul_freq_max > 2570:
+    perr = portal.ParameterError("Band 7 uplink frequencies must be between 2500 and 2570 MHz", ['ul_freq_min', 'ul_freq_max'])
+    portal.context.reportError(perr)
+if params.ul_freq_max - params.ul_freq_min < 1:
+    perr = portal.ParameterError("Minimum and maximum frequencies must be separated by at least 1 MHz", ['ul_freq_min', 'ul_freq_max'])
+    portal.context.reportError(perr)
+if params.dl_freq_min < 2620 or params.dl_freq_min > 2690 \
+   or params.dl_freq_max < 2620 or params.dl_freq_max > 2690:
+    perr = portal.ParameterError("Band 7 downlink frequencies must be between 2620 and 2690 MHz", ['dl_freq_min', 'dl_freq_max'])
+    portal.context.reportError(perr)
+if params.dl_freq_max - params.dl_freq_min < 1:
+    perr = portal.ParameterError("Minimum and maximum frequencies must be separated by at least 1 MHz", ['dl_freq_min', 'dl_freq_max'])
+    portal.context.reportError(perr)
 
-# Create link
+# Now verify.
+portal.context.verifyParameters()
+
+# Lastly, request resources.
+request = portal.context.makeRequestRSpec()
+request.requestSpectrum(params.ul_freq_min, params.ul_freq_max, 0)
+request.requestSpectrum(params.dl_freq_min, params.dl_freq_max, 0)
+
+# Add single epc node
 hacklan = request.Link("s1-lan")
-
-# Add a NUC eNB node
-enb1 = request.RawPC("enb")
-enb1.component_id = params.FIXED_ENB1
-enb1.hardware_type = GLOBALS.NUC_HWTYPE
-enb1.disk_image = GLOBALS.SRS_ENB_IMG
-enb1.Desire("rf-controlled", 1)
-enb1_s1_if = enb1.addInterface("enb1_s1if")
-
-# Add NUC UE1 node
-rue1 = request.RawPC("ue1")
-rue1.component_id = params.FIXED_UE1
-rue1.hardware_type = GLOBALS.NUC_HWTYPE
-rue1.disk_image = GLOBALS.SRS_ENB_IMG
-rue1.Desire("rf-controlled", 1)
-
-# Add NUC UE2 node
-rue2 = request.RawPC("ue2")
-rue2.component_id = params.FIXED_UE2
-rue2.hardware_type = GLOBALS.NUC_HWTYPE
-rue2.disk_image = GLOBALS.SRS_ENB_IMG
-rue2.Desire("rf-controlled", 1)
-
-# Add OAI EPC (HSS, MME, SPGW) node.
 epc = request.RawPC("epc")
 epc.disk_image = GLOBALS.EPC_IMG
-epc.addService(pg.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
+epc.addService(rspec.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
 epc_s1_if = epc.addInterface("epc_s1if")
-
-# Add EPC and ENB to LAN
 hacklan.addInterface(epc_s1_if)
-hacklan.addInterface(enb1_s1_if)
 hacklan.link_multiplexing = True
 hacklan.vlan_tagging = True
 hacklan.best_effort = True
 
-# Add Optional Blockstore
-if params.tempFileSystemMax:
-    for node in [(epc, 'epc'), (enb1, 'enb'), (rue1, 'rue1'), (rue2, 'rue2')]:
-        bs = node[0].Blockstore(node[1] + "-bs", params.tempFileSystemMount)
-        bs.size = "0GB"
-        bs.placement = "any"
+for i, x310_radio in enumerate(params.x310_radios):
+    x310_node_pair(i, x310_radio, hacklan)
 
+for i, b210_node in enumerate(params.b210_nodes):
+    b210_nuc_pair(i, b210_node)
+  
 tour = IG.Tour()
 tour.Description(IG.Tour.MARKDOWN, tourDescription)
 tour.Instructions(IG.Tour.MARKDOWN, tourInstructions)
 request.addTour(tour)
 
-# Print the RSpec to the enclosing page.
-pc.printRequestRSpec(request)
+portal.context.printRequestRSpec()
