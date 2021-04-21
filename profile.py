@@ -378,9 +378,9 @@ for i, x310_radio in enumerate(params.x310_radios):
 for i, b210_node in enumerate(params.b210_nodes):
     b210_nuc_pair(i, b210_node)
   
-tour = IG.Tour()
-tour.Description(IG.Tour.MARKDOWN, tourDescription)
-tour.Instructions(IG.Tour.MARKDOWN, tourInstructions)
+tour = ig.Tour()
+tour.Description(ig.Tour.MARKDOWN, tourDescription)
+tour.Instructions(ig.Tour.MARKDOWN, tourInstructions)
 request.addTour(tour)
 
 portal.context.printRequestRSpec()
