@@ -322,13 +322,13 @@ portal.context.defineParameter(
 )
 
 # # Instead of a size, ask for all available space. 
-pc.defineParameter("tempFileSystemMax",  "Temp Filesystem Max Space",
+portal.context.defineParameter("tempFileSystemMax",  "Temp Filesystem Max Space",
                     portal.ParameterType.BOOLEAN, True,
                     advanced=True,
                     longDescription="Instead of specifying a size for your temporary filesystem, " +
                     "check this box to allocate all available disk space. Leave the tempFileSystemSize above as zero (currently not included).")
 
-pc.defineParameter("tempFileSystemMount", "Temporary Filesystem Mount Point",
+portal.context.defineParameter("tempFileSystemMount", "Temporary Filesystem Mount Point",
                   portal.ParameterType.STRING,"/mydata",advanced=True,
                   longDescription="Mount the temporary file system at this mount point; in general you " +
                   "you do not need to change this, but we provide the option just in case your software " +
