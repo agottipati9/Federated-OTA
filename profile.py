@@ -188,10 +188,9 @@ Try adjusting the transmit/receive gain on the eNodeB and the respective UE in `
 
 # Globals
 class GLOBALS(object):
-    SRS_ENB_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:U18LL-SRSLTE"
+    SRSLTE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:U18LL-SRSLTE"
     EPC_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU18-64-STD"
     NEXTEPC_INSTALL_SCRIPT = "/usr/bin/sudo chmod +x /local/repository/bin/NextEPC/install_nextEPC.sh && /usr/bin/sudo /local/repository/bin/NextEPC/install_nextEPC.sh"
-    NUC_HWTYPE = "nuc5300"
     DLDEFLOFREQ = 2620.0
     DLDEFHIFREQ = 2630.0
     ULDEFLOFREQ = 2500.0
