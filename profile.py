@@ -189,7 +189,6 @@ Try adjusting the transmit/receive gain on the eNodeB and the respective UE in `
 # Globals
 class GLOBALS(object):
     SRSLTE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:U18LL-SRSLTE"
-    EPC_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU18-64-STD"
     NEXTEPC_INSTALL_SCRIPT = "/usr/bin/sudo chmod +x /local/repository/bin/NextEPC/install_nextEPC.sh && /usr/bin/sudo /local/repository/bin/NextEPC/install_nextEPC.sh"
     DLDEFLOFREQ = 2620.0
     DLDEFHIFREQ = 2630.0
@@ -197,7 +196,7 @@ class GLOBALS(object):
     ULDEFHIFREQ = 2510.0
 
 
-def x310_node_pair(idx, x310_radio, hacklan):
+def x310_node_pair(idx, x310_radio):
     radio_link = request.Link("radio-link-%d"%(idx))
     radio_link.bandwidth = 10*1000*1000
 
@@ -211,6 +210,7 @@ def x310_node_pair(idx, x310_radio, hacklan):
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/add-nat-and-ip-forwarding.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-sdr-iface.sh"))
+    node.addService(rspec.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
 
     node_radio_if = node.addInterface("usrp_if")
     enb_s1_if = node.addInterface("enb1_s1if")
@@ -222,7 +222,6 @@ def x310_node_pair(idx, x310_radio, hacklan):
     radio.component_id = x310_radio.radio_name
     radio.component_manager_id = "urn:publicid:IDN+emulab.net+authority+cm"
     radio_link.addNode(radio)
-    hacklan.addInterface(enb_s1_if)
 
 
 def b210_nuc_pair(idx, b210_node):
@@ -261,7 +260,7 @@ portal.context.defineStructParameter("x310_radios", "X310 Radios", [],
                                      multiValue=True,
                                      itemDefaultValue=
                                      {},
-                                     min=0, max=None,
+                                     min=0, max=1,
                                      members=[
                                         portal.Parameter(
                                              "radio_name",
@@ -359,17 +358,6 @@ portal.context.verifyParameters()
 request = portal.context.makeRequestRSpec()
 request.requestSpectrum(params.ul_freq_min, params.ul_freq_max, 0)
 request.requestSpectrum(params.dl_freq_min, params.dl_freq_max, 0)
-
-# Add single epc node
-hacklan = request.Link("s1-lan")
-epc = request.RawPC("epc")
-epc.disk_image = GLOBALS.EPC_IMG
-epc.addService(rspec.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
-epc_s1_if = epc.addInterface("epc_s1if")
-hacklan.addInterface(epc_s1_if)
-hacklan.link_multiplexing = True
-hacklan.vlan_tagging = True
-hacklan.best_effort = True
 
 for i, x310_radio in enumerate(params.x310_radios):
     x310_node_pair(i, x310_radio, hacklan)
