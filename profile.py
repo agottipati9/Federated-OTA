@@ -210,7 +210,6 @@ def x310_node_pair(idx, x310_radio, hacklan):
     bs.placement = "any"
     node.component_manager_id = "urn:publicid:IDN+emulab.net+authority+cm"
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/add-nat-and-ip-forwarding.sh"))
-    node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/update-config-files.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-sdr-iface.sh"))
 
@@ -236,7 +235,6 @@ def b210_nuc_pair(idx, b210_node):
     b210_nuc_pair_node.component_manager_id = agg_full_name
     b210_nuc_pair_node.component_id = "nuc2"
     b210_nuc_pair_node.disk_image = GLOBALS.SRSLTE_IMG
-    b210_nuc_pair_node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/update-config-files.sh"))
     b210_nuc_pair_node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
 
 
