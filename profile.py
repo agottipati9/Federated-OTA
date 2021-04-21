@@ -256,19 +256,11 @@ rooftop_names = [
      "Emulab, cellsdr1-meb (MEB)"),
 ]
 
-portal.context.defineStructParameter("x310_radios", "X310 Radios", [],
-                                     multiValue=True,
-                                     itemDefaultValue=
-                                     {},
-                                     min=0, max=1,
-                                     members=[
-                                        portal.Parameter(
-                                             "radio_name",
-                                             "Rooftop base-station X310",
-                                             portal.ParameterType.STRING,
-                                             rooftop_names[0],
-                                             rooftop_names)
-                                     ])
+portal.context.defineParameter("x310_radios",
+                               "Rooftop base-station X310",
+                               portal.ParameterType.STRING,
+                               rooftop_names[0],
+                               rooftop_names)
 
 fixed_endpoint_aggregates = [
     ("web",
@@ -279,7 +271,7 @@ fixed_endpoint_aggregates = [
 
 portal.context.defineStructParameter("b210_nodes", "B210 Radios", [],
                                      multiValue=True,
-                                     min=0, max=None,
+                                     min=0, max=2,
                                      members=[
                                          portal.Parameter(
                                              "aggregate_id",
@@ -359,8 +351,7 @@ request = portal.context.makeRequestRSpec()
 request.requestSpectrum(params.ul_freq_min, params.ul_freq_max, 0)
 request.requestSpectrum(params.dl_freq_min, params.dl_freq_max, 0)
 
-for i, x310_radio in enumerate(params.x310_radios):
-    x310_node_pair(i, x310_radio, hacklan)
+x310_node_pair(0, params.x310_radios)
 
 for i, b210_node in enumerate(params.b210_nodes):
     b210_nuc_pair(i, b210_node)
