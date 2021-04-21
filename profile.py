@@ -50,6 +50,10 @@ This profile utilizes IBM's enterprise Federated framework.
 """
 tourInstructions = """
 
+# TODO:
+
+* Update notebooks for new srsUE tunnel ips
+
 **IMPORTANT: You MUST adjust the configuration of srsLTE eNodeB and UE
 components if you changed the frequency ranges in the profile
 parameters. Do so BEFORE starting any srsLTE processes!  Please see
@@ -67,6 +71,7 @@ to finish setting up the experiment:
 
 To configure the LTE setup, log into the corresponding nodes and run the following commands:
 
+    On enb: sudo cp /local/repository/etc/srsLTE/epc.conf /etc/srslte/epc.conf
     On enb: sudo cp /local/repository/etc/srsLTE/enb.conf /etc/srslte/enb.conf
     On ue1: sudo cp /local/repository/etc/srsLTE/ue1.conf /etc/srslte/ue.conf
     On ue2: sudo cp /local/repository/etc/srsLTE/ue2.conf /etc/srslte/ue.conf
@@ -80,44 +85,10 @@ Adjust the frequencies to use, if necessary (*MANDATORY* if you have changed the
   * Add `ul_freq` and set to the center frequency for the uplink channel you allocated
     * E.g., `ul_freq = 2505e6` if your uplink channel is 2500 - 2510 MHz
     
-To configure the HSS, do the following:
-
-Log into the `epc` node and do:
-
-    cd /opt/nextepc/webui
-    sudo npm run dev
-    
-Point your browser at **http://pcXXX.emulab.net:3000**, where **pcXXX** is the `epc` node from the experiment.
-
-**NOTE:** The host information can be found in the list view tab on the POWDER Portal interface view for your experiment.
-
-Log in to the HSS with the following credentials:
-
-    Username: admin
-    Password: 1423
-
-Enter in the following UE subscriber information:
-   
-**UE1**
-    
-    * IMSI: 001011234560300
-    * Key: 00112233445566778899aabbccddeeff
-    * USIM Type: OP
-    * OP: 01020304050607080910111213141516
-    
- **UE2**
-    
-    * IMSI: 001011234560301
-    * Key: 00112233445566778899aabbccddeeee
-    * USIM Type: OP
-    * OP: 01020304050607080910111213141517
-    
-For troubleshooting, please refer to the **Add the simulated UE subscriber information to the HSS database** section in this [guide](https://gitlab.flux.utah.edu/powderrenewpublic/mww2019/blob/master/4G-LTE.md).
-
 ## Running the LTE Network
 After configuring the LTE network, run the following commands in order:
 
-    On epc: sudo /opt/nextepc/install/bin/nextepc-epcd
+    On enb: sudo srsepc
     On enb: sudo srsenb
     On ue1: sudo srsue
     On ue2: sudo srsue
@@ -210,7 +181,7 @@ def x310_node_pair(idx, x310_radio):
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/add-nat-and-ip-forwarding.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-cpu.sh"))
     node.addService(rspec.Execute(shell="bash", command="/local/repository/bin/tune-sdr-iface.sh"))
-    node.addService(rspec.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
+    #node.addService(rspec.Execute(shell="bash", command=GLOBALS.NEXTEPC_INSTALL_SCRIPT))
 
     node_radio_if = node.addInterface("usrp_if")
     enb_s1_if = node.addInterface("enb1_s1if")
