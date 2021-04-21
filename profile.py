@@ -200,7 +200,7 @@ def x310_node_pair(idx, x310_radio):
     radio_link = request.Link("radio-link-%d"%(idx))
     radio_link.bandwidth = 10*1000*1000
 
-    node = request.RawPC("%s-comp"%(x310_radio.radio_name))
+    node = request.RawPC("%s-comp"%(x310_radio))
     node.hardware_type = params.x310_pair_nodetype
     node.disk_image = GLOBALS.SRSLTE_IMG
     bs = node.Blockstore("bs-comp-%s" % idx, params.tempFileSystemMount)
@@ -218,8 +218,8 @@ def x310_node_pair(idx, x310_radio):
                                                "255.255.255.0"))
     radio_link.addInterface(node_radio_if)
 
-    radio = request.RawPC("%s-x310"%(x310_radio.radio_name))
-    radio.component_id = x310_radio.radio_name
+    radio = request.RawPC("%s-x310"%(x310_radio))
+    radio.component_id = x310_radio
     radio.component_manager_id = "urn:publicid:IDN+emulab.net+authority+cm"
     radio_link.addNode(radio)
 
