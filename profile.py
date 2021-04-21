@@ -72,7 +72,9 @@ To configure the LTE setup, log into the corresponding nodes and run the followi
     On ue1: sudo cp /local/repository/etc/srsLTE/ue1.conf /etc/srslte/ue.conf
     On ue2: sudo cp /local/repository/etc/srsLTE/ue2.conf /etc/srslte/ue.conf
     
-Adjust the frequencies to use, if necessary (*MANDATORY* if you have changed these in the profile parameters):
+**NOTE:** UE1 and UE2 can be chosen arbitrarily. When running the FL system, ensure you run the correct notebook.
+    
+Adjust the frequencies to use, if necessary (**MANDATORY** if you have changed these in the profile parameters):
 
   * Open `/etc/srslte/enb.conf`
   * Find `dl_earfcn` and comment it out
@@ -122,7 +124,7 @@ To excute the example code in ```/mydata/federated-learning-lib/Notebooks/keras_
 
 Now point your browser at **XXXX.emulab.net:8888/?token=JUPYTER_TOKEN**, where **XXXX** is the emulab compute node and **JUPYTER_TOKEN** is the Jupyter authentication token.
 
-Navigate to ```/mydata/federated-learning-lib/Notebooks/keras_classifier```. The aggregator corresponds to the `epc` node, while p0 corresponds to `ue1` and p1 corresponds to `ue2`. 
+Navigate to ```/mydata/federated-learning-lib/Notebooks/keras_classifier```. The aggregator corresponds to the `enb` node, while p0 corresponds to `ue1` and p1 corresponds to `ue2`. 
 Please follow the directions in the notebook to train and evaluate the Differentially Private Keras Classifier. You may also find the tutorials [here](https://github.com/IBM/federated-learning-lib) helpful as well.
 
 **NOTES:** To utilize the Conda environment, you must be running the bash shell with elevated privileges i.e. **sudo bash**.
